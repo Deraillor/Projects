@@ -1,0 +1,881 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#1a3d2e">
+  <title>Camp Trip Planner</title>
+  <style>
+    :root {
+      --bg: #0f1f18;
+      --surface: #1a3d2e;
+      --surface-2: #234a38;
+      --accent: #e8a838;
+      --accent-soft: rgba(232, 168, 56, 0.18);
+      --text: #f4f0e8;
+      --muted: #a8b5a8;
+      --border: rgba(255, 255, 255, 0.1);
+      --success: #6ecf8a;
+      --danger: #e07070;
+      --radius: 14px;
+      --shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background:
+        radial-gradient(ellipse 120% 80% at 50% -20%, rgba(232, 168, 56, 0.12), transparent 60%),
+        linear-gradient(180deg, #142820 0%, var(--bg) 40%);
+      color: var(--text);
+      min-height: 100dvh;
+      line-height: 1.45;
+      padding: 1rem 1rem calc(5.5rem + var(--safe-bottom));
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 1.25rem;
+      padding-top: 0.25rem;
+    }
+
+    header h1 {
+      font-size: 1.55rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    header p {
+      color: var(--muted);
+      font-size: 0.9rem;
+      margin-top: 0.35rem;
+    }
+
+    .card {
+      background: rgba(26, 61, 46, 0.72);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem;
+      margin-bottom: 0.85rem;
+      box-shadow: var(--shadow);
+    }
+
+    .card h2 {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--accent);
+      margin-bottom: 0.85rem;
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+    }
+
+    .card h2 span.icon { font-size: 1rem; }
+
+    label {
+      display: block;
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin-bottom: 0.3rem;
+    }
+
+    input[type="text"],
+    input[type="date"],
+    input[type="number"],
+    input[type="url"],
+    textarea,
+    select {
+      width: 100%;
+      padding: 0.72rem 0.85rem;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: rgba(0, 0, 0, 0.22);
+      color: var(--text);
+      font-size: 1rem;
+      margin-bottom: 0.75rem;
+      -webkit-appearance: none;
+      appearance: none;
+    }
+
+    textarea {
+      min-height: 4.5rem;
+      resize: vertical;
+    }
+
+    input:focus, textarea:focus, select:focus {
+      outline: 2px solid var(--accent);
+      outline-offset: 1px;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.65rem;
+    }
+
+    .stat-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.55rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .stat {
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 10px;
+      padding: 0.65rem 0.5rem;
+      text-align: center;
+    }
+
+    .stat .val {
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: var(--accent);
+      line-height: 1.1;
+    }
+
+    .stat .lbl {
+      font-size: 0.68rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-top: 0.2rem;
+    }
+
+    .kwh-hero {
+      text-align: center;
+      padding: 0.85rem;
+      background: var(--accent-soft);
+      border-radius: 12px;
+      margin: 0.5rem 0 0.75rem;
+    }
+
+    .kwh-hero .big {
+      font-size: 2.4rem;
+      font-weight: 800;
+      color: var(--accent);
+      line-height: 1;
+    }
+
+    .kwh-hero .sub {
+      font-size: 0.82rem;
+      color: var(--muted);
+      margin-top: 0.35rem;
+    }
+
+    .hint {
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin-top: -0.35rem;
+      margin-bottom: 0.65rem;
+    }
+
+    .progress-wrap {
+      margin-bottom: 0.85rem;
+    }
+
+    .progress-bar {
+      height: 8px;
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: 99px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--success), var(--accent));
+      border-radius: 99px;
+      transition: width 0.3s ease;
+      width: 0%;
+    }
+
+    .progress-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin-bottom: 0.35rem;
+    }
+
+    .checklist-group {
+      margin-bottom: 0.85rem;
+    }
+
+    .checklist-group-title {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 0.45rem;
+      padding-bottom: 0.25rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .check-item {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      padding: 0.55rem 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    }
+
+    .check-item:last-child { border-bottom: none; }
+
+    .check-item input[type="checkbox"] {
+      width: 22px;
+      height: 22px;
+      accent-color: var(--accent);
+      flex-shrink: 0;
+    }
+
+    .check-item label {
+      margin: 0;
+      font-size: 0.95rem;
+      color: var(--text);
+      flex: 1;
+      cursor: pointer;
+    }
+
+    .check-item.done label {
+      text-decoration: line-through;
+      color: var(--muted);
+    }
+
+    .check-item button {
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-size: 1.1rem;
+      padding: 0.25rem 0.4rem;
+      cursor: pointer;
+      line-height: 1;
+    }
+
+    .row-actions {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .row-actions input { flex: 1; min-width: 0; margin-bottom: 0; }
+
+    button, .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.35rem;
+      padding: 0.72rem 1rem;
+      border-radius: 10px;
+      border: none;
+      font-size: 0.92rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.12s, opacity 0.12s;
+    }
+
+    button:active { transform: scale(0.97); }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #1a1200;
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    .btn-danger {
+      background: rgba(224, 112, 112, 0.15);
+      color: var(--danger);
+      border: 1px solid rgba(224, 112, 112, 0.3);
+    }
+
+    .btn-sm {
+      padding: 0.5rem 0.75rem;
+      font-size: 0.82rem;
+    }
+
+    .toolbar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: 0.65rem 1rem calc(0.65rem + var(--safe-bottom));
+      background: rgba(15, 31, 24, 0.92);
+      backdrop-filter: blur(16px);
+      border-top: 1px solid var(--border);
+      display: flex;
+      gap: 0.5rem;
+      z-index: 100;
+    }
+
+    .toolbar button { flex: 1; }
+
+    .toast {
+      position: fixed;
+      top: 1rem;
+      left: 50%;
+      transform: translateX(-50%) translateY(-120%);
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      padding: 0.65rem 1.1rem;
+      border-radius: 99px;
+      font-size: 0.85rem;
+      z-index: 200;
+      transition: transform 0.3s ease;
+      white-space: nowrap;
+      box-shadow: var(--shadow);
+    }
+
+    .toast.show { transform: translateX(-50%) translateY(0); }
+
+    dialog {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      color: var(--text);
+      padding: 1.25rem;
+      width: min(92vw, 420px);
+      box-shadow: var(--shadow);
+    }
+
+    dialog::backdrop {
+      background: rgba(0, 0, 0, 0.65);
+    }
+
+    dialog h3 {
+      margin-bottom: 0.75rem;
+      font-size: 1.05rem;
+    }
+
+    dialog textarea {
+      min-height: 8rem;
+      font-family: ui-monospace, monospace;
+      font-size: 0.78rem;
+    }
+
+    dialog .dialog-actions {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 0.75rem;
+    }
+
+    dialog .dialog-actions button { flex: 1; }
+
+    @media (min-width: 540px) {
+      body { max-width: 520px; margin: 0 auto; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1 id="tripTitle">Camp Trip Planner</h1>
+    <p id="tripSubtitle">Plan nights, campsite, Model 3 charge &amp; packing</p>
+  </header>
+
+  <section class="card" aria-label="Trip details">
+    <h2><span class="icon">🏕️</span> Trip</h2>
+    <label for="tripName">Trip name</label>
+    <input type="text" id="tripName" placeholder="e.g. Yosemite weekend">
+
+    <div class="grid-2">
+      <div>
+        <label for="startDate">Start date</label>
+        <input type="date" id="startDate">
+      </div>
+      <div>
+        <label for="endDate">End date</label>
+        <input type="date" id="endDate">
+      </div>
+    </div>
+
+    <div class="stat-row">
+      <div class="stat">
+        <div class="val" id="nightsDisplay">—</div>
+        <div class="lbl">Nights</div>
+      </div>
+      <div class="stat">
+        <div class="val" id="daysDisplay">—</div>
+        <div class="lbl">Days</div>
+      </div>
+      <div class="stat">
+        <div class="val" id="datesDisplay">—</div>
+        <div class="lbl">Dates</div>
+      </div>
+    </div>
+
+    <label for="tripNotes">Trip notes</label>
+    <textarea id="tripNotes" placeholder="Weather, who’s driving, meet-up time…"></textarea>
+  </section>
+
+  <section class="card" aria-label="Campsite">
+    <h2><span class="icon">📍</span> Campsite</h2>
+    <label for="campsiteName">Campsite name</label>
+    <input type="text" id="campsiteName" placeholder="e.g. Upper Pines Campground — Site 42">
+
+    <label for="campsiteLocation">Location / address</label>
+    <input type="text" id="campsiteLocation" placeholder="Park name, GPS pin, or address">
+
+    <div class="grid-2">
+      <div>
+        <label for="reservation">Reservation #</label>
+        <input type="text" id="reservation" placeholder="Optional">
+      </div>
+      <div>
+        <label for="checkIn">Check-in time</label>
+        <input type="text" id="checkIn" placeholder="e.g. 2:00 PM">
+      </div>
+    </div>
+
+    <label for="campsiteNotes">Campsite notes</label>
+    <textarea id="campsiteNotes" placeholder="Amenities, bear box, nearest bathroom, fire rules…"></textarea>
+
+    <label for="mapsLink">Maps link (optional)</label>
+    <input type="url" id="mapsLink" placeholder="https://maps.google.com/…">
+  </section>
+
+  <section class="card" aria-label="Model 3 energy estimate">
+    <h2><span class="icon">⚡</span> Model 3 — Estimated kWh</h2>
+
+    <div class="grid-2">
+      <div>
+        <label for="tripMiles">Round-trip miles</label>
+        <input type="number" id="tripMiles" min="0" step="1" value="300">
+      </div>
+      <div>
+        <label for="efficiency">Efficiency (Wh/mi)</label>
+        <input type="number" id="efficiency" min="150" max="400" step="5" value="250">
+      </div>
+    </div>
+    <p class="hint">Typical Model 3: ~230–280 Wh/mi mixed driving. Cold or mountain roads add ~10–20%.</p>
+
+    <div class="grid-2">
+      <div>
+        <label for="bufferPct">Safety buffer (%)</label>
+        <input type="number" id="bufferPct" min="0" max="50" step="5" value="15">
+      </div>
+      <div>
+        <label for="campKwh">At-camp use (kWh)</label>
+        <input type="number" id="campKwh" min="0" step="1" value="0">
+      </div>
+    </div>
+    <p class="hint">Camp use = Camp Mode, phone/laptop charging, etc. Leave 0 if not applicable.</p>
+
+    <div class="kwh-hero">
+      <div class="big"><span id="totalKwh">—</span> kWh</div>
+      <div class="sub">Estimated total energy needed</div>
+    </div>
+
+    <div class="stat-row">
+      <div class="stat">
+        <div class="val" id="driveKwh">—</div>
+        <div class="lbl">Driving</div>
+      </div>
+      <div class="stat">
+        <div class="val" id="bufferKwh">—</div>
+        <div class="lbl">Buffer</div>
+      </div>
+      <div class="stat">
+        <div class="val" id="rangeNeeded">—</div>
+        <div class="lbl">Miles eq.</div>
+      </div>
+    </div>
+
+    <label for="chargePlan">Charging plan</label>
+    <textarea id="chargePlan" placeholder="Leave at 90%, supercharge in Fresno, destination charger at lodge…"></textarea>
+  </section>
+
+  <section class="card" aria-label="Packing checklist">
+    <h2><span class="icon">🎒</span> Packing Checklist</h2>
+
+    <div class="progress-wrap">
+      <div class="progress-label">
+        <span>Packed</span>
+        <span id="packProgress">0 / 0</span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+    </div>
+
+    <div id="checklistContainer"></div>
+
+    <div class="row-actions" style="margin-top: 0.5rem;">
+      <input type="text" id="newItemText" placeholder="Add item…">
+      <button type="button" class="btn-primary btn-sm" id="addItemBtn">Add</button>
+    </div>
+    <div class="row-actions" style="margin-top: 0.5rem;">
+      <select id="newItemCategory"></select>
+      <button type="button" class="btn-secondary btn-sm" id="resetChecksBtn">Uncheck all</button>
+    </div>
+  </section>
+
+  <div class="toolbar">
+    <button type="button" class="btn-secondary" id="shareBtn">Share plan</button>
+    <button type="button" class="btn-primary" id="importBtn">Import plan</button>
+  </div>
+
+  <div class="toast" id="toast" role="status"></div>
+
+  <dialog id="importDialog">
+    <h3>Import plan</h3>
+    <p class="hint" style="margin-bottom: 0.65rem;">Paste the plan your partner shared, or a link with <code>#plan=</code> in it.</p>
+    <textarea id="importText" placeholder="Paste JSON or full share link here…"></textarea>
+    <div class="dialog-actions">
+      <button type="button" class="btn-secondary" id="cancelImport">Cancel</button>
+      <button type="button" class="btn-primary" id="confirmImport">Load plan</button>
+    </div>
+  </dialog>
+
+  <script>
+    const STORAGE_KEY = 'campTripPlanner_v1';
+
+    const DEFAULT_CHECKLIST = {
+      'Camp setup': [
+        'Tent', 'Sleeping bags', 'Sleeping pads', 'Camp chairs', 'Headlamps / flashlights',
+        'Lantern', 'Tarp or footprint', 'Hammer / mallet', 'Rope / paracord'
+      ],
+      'Kitchen & food': [
+        'Cooler + ice', 'Camp stove + fuel', 'Cookware & utensils', 'Plates / bowls / mugs',
+        'Coffee / tea', 'Snacks', 'Meals planned', 'Trash bags', 'Biodegradable soap', 'Water jugs'
+      ],
+      'Clothes & personal': [
+        'Layers (warm + rain)', 'Hiking boots / shoes', 'Socks & underwear', 'Sun hat & sunglasses',
+        'Sunscreen', 'Toiletries', 'First aid kit', 'Medications', 'Towels'
+      ],
+      'Tesla / charging': [
+        'Mobile connector / adapter', 'Extension cord (if allowed)', 'Charge plan confirmed',
+        'Supercharger apps bookmarked', 'Camp Mode plan', 'Phone mount'
+      ],
+      'Documents & misc': [
+        'ID & reservation confirmation', 'Cash / cards', 'Park pass', 'Camera', 'Books / games',
+        'Bug spray', 'Bear canister (if required)', 'Fire starter / matches (if allowed)'
+      ]
+    };
+
+    let state = loadState();
+
+    function defaultState() {
+      const checklist = [];
+      let id = 1;
+      for (const [category, items] of Object.entries(DEFAULT_CHECKLIST)) {
+        for (const text of items) {
+          checklist.push({ id: String(id++), category, text, checked: false });
+        }
+      }
+      return {
+        tripName: '',
+        startDate: '',
+        endDate: '',
+        tripNotes: '',
+        campsiteName: '',
+        campsiteLocation: '',
+        reservation: '',
+        checkIn: '',
+        campsiteNotes: '',
+        mapsLink: '',
+        tripMiles: 300,
+        efficiency: 250,
+        bufferPct: 15,
+        campKwh: 0,
+        chargePlan: '',
+        checklist
+      };
+    }
+
+    function loadState() {
+      try {
+        const hash = decodePlanFromHash();
+        if (hash) return hash;
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) return { ...defaultState(), ...JSON.parse(saved) };
+      } catch (_) {}
+      return defaultState();
+    }
+
+    function saveState() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      } catch (_) {}
+    }
+
+    function encodePlan() {
+      return btoa(unescape(encodeURIComponent(JSON.stringify(state))));
+    }
+
+    function decodePlan(str) {
+      const raw = str.trim();
+      const match = raw.match(/#plan=([A-Za-z0-9+/=_-]+)/);
+      const payload = match ? match[1] : raw;
+      const json = decodeURIComponent(escape(atob(payload.replace(/-/g, '+').replace(/_/g, '/'))));
+      const parsed = JSON.parse(json);
+      return { ...defaultState(), ...parsed };
+    }
+
+    function decodePlanFromHash() {
+      if (!location.hash.startsWith('#plan=')) return null;
+      try {
+        return decodePlan(location.hash);
+      } catch (_) {
+        return null;
+      }
+    }
+
+    function showToast(msg) {
+      const el = document.getElementById('toast');
+      el.textContent = msg;
+      el.classList.add('show');
+      setTimeout(() => el.classList.remove('show'), 2600);
+    }
+
+    function nightsBetween(start, end) {
+      if (!start || !end) return null;
+      const s = new Date(start + 'T12:00:00');
+      const e = new Date(end + 'T12:00:00');
+      const diff = Math.round((e - s) / 86400000);
+      return diff >= 0 ? diff : null;
+    }
+
+    function formatShortDate(iso) {
+      if (!iso) return '';
+      const d = new Date(iso + 'T12:00:00');
+      return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    }
+
+    function readForm() {
+      state.tripName = document.getElementById('tripName').value;
+      state.startDate = document.getElementById('startDate').value;
+      state.endDate = document.getElementById('endDate').value;
+      state.tripNotes = document.getElementById('tripNotes').value;
+      state.campsiteName = document.getElementById('campsiteName').value;
+      state.campsiteLocation = document.getElementById('campsiteLocation').value;
+      state.reservation = document.getElementById('reservation').value;
+      state.checkIn = document.getElementById('checkIn').value;
+      state.campsiteNotes = document.getElementById('campsiteNotes').value;
+      state.mapsLink = document.getElementById('mapsLink').value;
+      state.tripMiles = Number(document.getElementById('tripMiles').value) || 0;
+      state.efficiency = Number(document.getElementById('efficiency').value) || 250;
+      state.bufferPct = Number(document.getElementById('bufferPct').value) || 0;
+      state.campKwh = Number(document.getElementById('campKwh').value) || 0;
+      state.chargePlan = document.getElementById('chargePlan').value;
+    }
+
+    function writeForm() {
+      document.getElementById('tripName').value = state.tripName || '';
+      document.getElementById('startDate').value = state.startDate || '';
+      document.getElementById('endDate').value = state.endDate || '';
+      document.getElementById('tripNotes').value = state.tripNotes || '';
+      document.getElementById('campsiteName').value = state.campsiteName || '';
+      document.getElementById('campsiteLocation').value = state.campsiteLocation || '';
+      document.getElementById('reservation').value = state.reservation || '';
+      document.getElementById('checkIn').value = state.checkIn || '';
+      document.getElementById('campsiteNotes').value = state.campsiteNotes || '';
+      document.getElementById('mapsLink').value = state.mapsLink || '';
+      document.getElementById('tripMiles').value = state.tripMiles ?? 300;
+      document.getElementById('efficiency').value = state.efficiency ?? 250;
+      document.getElementById('bufferPct').value = state.bufferPct ?? 15;
+      document.getElementById('campKwh').value = state.campKwh ?? 0;
+      document.getElementById('chargePlan').value = state.chargePlan || '';
+    }
+
+    function updateTripStats() {
+      const nights = nightsBetween(state.startDate, state.endDate);
+      document.getElementById('nightsDisplay').textContent = nights != null ? nights : '—';
+      document.getElementById('daysDisplay').textContent = nights != null ? nights + 1 : '—';
+
+      if (state.startDate && state.endDate && nights != null) {
+        document.getElementById('datesDisplay').textContent =
+          formatShortDate(state.startDate) + '–' + formatShortDate(state.endDate);
+      } else {
+        document.getElementById('datesDisplay').textContent = '—';
+      }
+
+      const title = state.tripName || 'Camp Trip Planner';
+      document.getElementById('tripTitle').textContent = title;
+      document.title = title + ' — Trip Planner';
+
+      let sub = [];
+      if (state.campsiteName) sub.push(state.campsiteName);
+      if (nights != null) sub.push(nights + ' night' + (nights === 1 ? '' : 's'));
+      document.getElementById('tripSubtitle').textContent =
+        sub.length ? sub.join(' · ') : 'Plan nights, campsite, Model 3 charge & packing';
+    }
+
+    function updateKwh() {
+      const driveKwh = (state.tripMiles * state.efficiency) / 1000;
+      const withBuffer = driveKwh * (1 + state.bufferPct / 100);
+      const total = withBuffer + state.campKwh;
+      const bufferOnly = withBuffer - driveKwh;
+      const milesEq = state.efficiency > 0 ? (total * 1000) / state.efficiency : 0;
+
+      document.getElementById('driveKwh').textContent = driveKwh.toFixed(1);
+      document.getElementById('bufferKwh').textContent = bufferOnly.toFixed(1);
+      document.getElementById('totalKwh').textContent = total.toFixed(1);
+      document.getElementById('rangeNeeded').textContent = Math.round(milesEq);
+    }
+
+    function getCategories() {
+      const cats = new Set(state.checklist.map(i => i.category));
+      return [...cats];
+    }
+
+    function renderChecklist() {
+      const container = document.getElementById('checklistContainer');
+      const categories = getCategories();
+      container.innerHTML = '';
+
+      for (const cat of categories) {
+        const items = state.checklist.filter(i => i.category === cat);
+        const group = document.createElement('div');
+        group.className = 'checklist-group';
+        group.innerHTML = '<div class="checklist-group-title">' + escapeHtml(cat) + '</div>';
+
+        for (const item of items) {
+          const row = document.createElement('div');
+          row.className = 'check-item' + (item.checked ? ' done' : '');
+          row.innerHTML =
+            '<input type="checkbox" id="chk-' + item.id + '" ' + (item.checked ? 'checked' : '') + '>' +
+            '<label for="chk-' + item.id + '">' + escapeHtml(item.text) + '</label>' +
+            '<button type="button" aria-label="Remove item" data-id="' + item.id + '">×</button>';
+
+          row.querySelector('input').addEventListener('change', e => {
+            item.checked = e.target.checked;
+            persistAndRender();
+          });
+          row.querySelector('button').addEventListener('click', () => {
+            state.checklist = state.checklist.filter(i => i.id !== item.id);
+            persistAndRender();
+          });
+          group.appendChild(row);
+        }
+        container.appendChild(group);
+      }
+
+      const total = state.checklist.length;
+      const done = state.checklist.filter(i => i.checked).length;
+      document.getElementById('packProgress').textContent = done + ' / ' + total;
+      document.getElementById('progressFill').style.width = total ? (done / total * 100) + '%' : '0%';
+
+      const sel = document.getElementById('newItemCategory');
+      const prev = sel.value;
+      sel.innerHTML = categories.map(c => '<option value="' + escapeHtml(c) + '">' + escapeHtml(c) + '</option>').join('') +
+        '<option value="__new__">+ New category</option>';
+      if (categories.includes(prev)) sel.value = prev;
+    }
+
+    function escapeHtml(s) {
+      return String(s)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function persistAndRender() {
+      readForm();
+      saveState();
+      updateTripStats();
+      updateKwh();
+      renderChecklist();
+    }
+
+    function addItem() {
+      const text = document.getElementById('newItemText').value.trim();
+      if (!text) return;
+      let category = document.getElementById('newItemCategory').value;
+      if (category === '__new__') {
+        category = prompt('New category name:', 'Misc') || 'Misc';
+      }
+      const maxId = state.checklist.reduce((m, i) => Math.max(m, Number(i.id) || 0), 0);
+      state.checklist.push({ id: String(maxId + 1), category, text, checked: false });
+      document.getElementById('newItemText').value = '';
+      persistAndRender();
+    }
+
+    async function sharePlan() {
+      readForm();
+      saveState();
+      const encoded = encodePlan();
+      const base = location.href.split('#')[0];
+      const link = base + '#plan=' + encoded;
+
+      if (link.length > 8000) {
+        try {
+          await navigator.clipboard.writeText(encoded);
+          showToast('Plan copied — paste in Import (link too long)');
+        } catch (_) {
+          prompt('Copy this plan data:', encoded);
+        }
+        return;
+      }
+
+      try {
+        if (navigator.share) {
+          await navigator.share({ title: state.tripName || 'Camp Trip Plan', text: 'Our camp trip plan', url: link });
+          showToast('Shared!');
+          return;
+        }
+      } catch (e) {
+        if (e.name === 'AbortError') return;
+      }
+
+      try {
+        await navigator.clipboard.writeText(link);
+        showToast('Link copied — send to your fiancée!');
+      } catch (_) {
+        prompt('Copy this link:', link);
+      }
+    }
+
+    function openImport() {
+      document.getElementById('importText').value = '';
+      document.getElementById('importDialog').showModal();
+    }
+
+    function confirmImport() {
+      const raw = document.getElementById('importText').value.trim();
+      if (!raw) return;
+      try {
+        state = decodePlan(raw);
+        writeForm();
+        saveState();
+        history.replaceState(null, '', location.pathname + '#plan=' + encodePlan());
+        persistAndRender();
+        document.getElementById('importDialog').close();
+        showToast('Plan loaded!');
+      } catch (_) {
+        showToast('Could not read plan — check paste');
+      }
+    }
+
+    document.querySelectorAll('input, textarea, select').forEach(el => {
+      el.addEventListener('input', persistAndRender);
+      el.addEventListener('change', persistAndRender);
+    });
+
+    document.getElementById('addItemBtn').addEventListener('click', addItem);
+    document.getElementById('newItemText').addEventListener('keydown', e => {
+      if (e.key === 'Enter') { e.preventDefault(); addItem(); }
+    });
+    document.getElementById('resetChecksBtn').addEventListener('click', () => {
+      state.checklist.forEach(i => { i.checked = false; });
+      persistAndRender();
+    });
+    document.getElementById('shareBtn').addEventListener('click', sharePlan);
+    document.getElementById('importBtn').addEventListener('click', openImport);
+    document.getElementById('cancelImport').addEventListener('click', () => document.getElementById('importDialog').close());
+    document.getElementById('confirmImport').addEventListener('click', confirmImport);
+
+    writeForm();
+    persistAndRender();
+
+    if (location.hash.startsWith('#plan=')) {
+      showToast('Shared plan loaded');
+    }
+  </script>
+</body>
+</html>
