@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Airline Pay Comparator 2026 — United · American · Delta</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="bg-grid"></div>
+  <div class="container">
+    <header>
+      <h1>Airline Pay Comparator</h1>
+      <p>
+        Compare 2026 pilot compensation across United, American, and Delta.
+        Enter your seat, seniority year, and fleet — no login required.
+        All figures from public contract pay tables.
+      </p>
+    </header>
+
+    <section class="controls" aria-label="Pay calculator inputs">
+      <div class="controls-grid">
+        <div class="control-group">
+          <label for="airline">Your airline (highlight)</label>
+          <select id="airline">
+            <option value="united">United Airlines</option>
+            <option value="american">American Airlines</option>
+            <option value="delta">Delta Air Lines</option>
+          </select>
+        </div>
+        <div class="control-group">
+          <label for="seat">Seat</label>
+          <select id="seat">
+            <option value="fo">First Officer</option>
+            <option value="captain">Captain</option>
+          </select>
+        </div>
+        <div class="control-group">
+          <label for="year">Year of service</label>
+          <select id="year">
+            <option value="1">Year 1</option>
+            <option value="2">Year 2</option>
+            <option value="3">Year 3</option>
+            <option value="4">Year 4</option>
+            <option value="5">Year 5</option>
+            <option value="6">Year 6</option>
+            <option value="7">Year 7</option>
+            <option value="8">Year 8</option>
+            <option value="9">Year 9</option>
+            <option value="10">Year 10</option>
+            <option value="11">Year 11</option>
+            <option value="12" selected>Year 12</option>
+          </select>
+        </div>
+        <div class="control-group">
+          <label for="fleet">Fleet type</label>
+          <select id="fleet">
+            <option value="widebody">Widebody (787, 777, A350)</option>
+            <option value="narrowbody">Narrowbody (737, A320/A321)</option>
+          </select>
+        </div>
+        <div class="control-group">
+          <label for="monthlyHours">Monthly credit hours</label>
+          <input type="range" id="monthlyHours" min="65" max="95" value="80" step="1">
+          <div class="range-value"><span id="monthlyHoursVal">80</span> hrs/mo</div>
+        </div>
+        <div class="control-group">
+          <label for="perDiemDom">Per diem hrs (domestic/mo)</label>
+          <input type="range" id="perDiemDom" min="0" max="120" value="60" step="5">
+          <div class="range-value"><span id="perDiemDomVal">60</span> hrs/mo</div>
+        </div>
+        <div class="control-group">
+          <label for="perDiemIntl">Per diem hrs (international/mo)</label>
+          <input type="range" id="perDiemIntl" min="0" max="80" value="20" step="5">
+          <div class="range-value"><span id="perDiemIntlVal">20</span> hrs/mo</div>
+        </div>
+      </div>
+    </section>
+
+    <section id="comparisonGrid" class="comparison-grid" aria-label="Side-by-side pay comparison"></section>
+
+    <section class="pay-table-section" aria-label="Full pay scale table">
+      <h2>2026 Pay Scale — All Years Side-by-Side</h2>
+      <table class="pay-table">
+        <thead>
+          <tr>
+            <th>Year</th>
+            <th>United $/hr</th>
+            <th>American $/hr</th>
+            <th>Delta $/hr</th>
+            <th>United annual</th>
+            <th>American annual</th>
+            <th>Delta annual</th>
+          </tr>
+        </thead>
+        <tbody id="payTableBody"></tbody>
+      </table>
+    </section>
+
+    <section id="benefitsSection" class="benefits-section" aria-label="Benefits and perks"></section>
+
+    <aside class="disclaimer">
+      <h3>Disclaimer — Public Data Only</h3>
+      <p>
+        Pay rates are sourced from publicly available 2026 contract pay tables
+        (ALPA Contract Comparison, Sep 2025;
+        <a href="https://www.airlinepilotcentral.com" target="_blank" rel="noopener">AirlinePilotCentral.com</a>;
+        APA/ALPA filings). Per diem, profit sharing, and override pay are estimates.
+        Actual compensation varies by base, trip selection, and monthly hours flown.
+        This tool is for informational comparison only — not affiliated with any airline.
+        Verify current rates with your union and employer before making career decisions.
+      </p>
+    </aside>
+  </div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
