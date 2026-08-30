@@ -1013,9 +1013,10 @@
     }
 
     function rankPlace(props) {
-      const key = props.osm_key === 'tourism' ? props.osm_value : props.osm_value;
-      const combo = props.osm_key === 'boundary' ? props.osm_value : (props.osm_key === 'tourism' ? props.osm_value : '');
-      return PLACE_PRIORITY[combo] ?? PLACE_PRIORITY[props.osm_value] ?? 99;
+      if (props.osm_key === 'tourism') return PLACE_PRIORITY[props.osm_value] ?? 99;
+      if (props.osm_key === 'boundary' && props.osm_value === 'national_park') return PLACE_PRIORITY.national_park;
+      if (props.osm_key === 'leisure' && props.osm_value === 'park') return PLACE_PRIORITY.park;
+      return 99;
     }
 
     function closeLocationSuggestions() {
