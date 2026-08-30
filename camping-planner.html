@@ -368,6 +368,97 @@
 
     dialog .dialog-actions button { flex: 1; }
 
+    .autocomplete-wrap {
+      position: relative;
+      margin-bottom: 0.75rem;
+    }
+
+    .autocomplete-wrap input {
+      margin-bottom: 0;
+    }
+
+    .suggestions {
+      display: none;
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0;
+      right: 0;
+      max-height: 16rem;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      box-shadow: var(--shadow);
+      z-index: 50;
+      list-style: none;
+    }
+
+    .suggestions.open { display: block; }
+
+    .suggestion-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.55rem;
+      width: 100%;
+      padding: 0.72rem 0.85rem;
+      border: none;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      background: transparent;
+      color: var(--text);
+      text-align: left;
+      cursor: pointer;
+      font: inherit;
+    }
+
+    .suggestion-item:last-child { border-bottom: none; }
+
+    .suggestion-item:active,
+    .suggestion-item.active {
+      background: var(--accent-soft);
+    }
+
+    .suggestion-icon {
+      flex-shrink: 0;
+      font-size: 1rem;
+      line-height: 1.3;
+      opacity: 0.85;
+    }
+
+    .suggestion-text { min-width: 0; flex: 1; }
+
+    .suggestion-title {
+      font-size: 0.92rem;
+      font-weight: 600;
+      line-height: 1.25;
+    }
+
+    .suggestion-sub {
+      font-size: 0.76rem;
+      color: var(--muted);
+      margin-top: 0.15rem;
+      line-height: 1.3;
+    }
+
+    .suggestion-badge {
+      flex-shrink: 0;
+      font-size: 0.62rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      padding: 0.2rem 0.4rem;
+      border-radius: 6px;
+      background: rgba(110, 207, 138, 0.15);
+      color: var(--success);
+      align-self: center;
+    }
+
+    .suggestion-status {
+      font-size: 0.76rem;
+      color: var(--muted);
+      margin: -0.35rem 0 0.65rem;
+      min-height: 1rem;
+    }
+
     @media (min-width: 540px) {
       body { max-width: 520px; margin: 0 auto; }
     }
@@ -420,7 +511,22 @@
     <input type="text" id="campsiteName" placeholder="e.g. Upper Pines Campground — Site 42">
 
     <label for="campsiteLocation">Location / address</label>
-    <input type="text" id="campsiteLocation" placeholder="Park name, GPS pin, or address">
+    <div class="autocomplete-wrap">
+      <input
+        type="text"
+        id="campsiteLocation"
+        placeholder="Start typing a park, campground, or address…"
+        autocomplete="off"
+        autocorrect="off"
+        spellcheck="false"
+        role="combobox"
+        aria-autocomplete="list"
+        aria-expanded="false"
+        aria-controls="locationSuggestions"
+      >
+      <ul id="locationSuggestions" class="suggestions" role="listbox"></ul>
+    </div>
+    <p class="suggestion-status" id="locationStatus" aria-live="polite"></p>
 
     <div class="grid-2">
       <div>
@@ -851,6 +957,212 @@
         showToast('Could not read plan — check paste');
       }
     }
+
+    const PLACE_PRIORITY = {
+      camp_site: 0,
+      caravan_site: 1,
+      wilderness_hut: 2,
+      national_park: 3,
+      park: 4,
+      nature_reserve: 5,
+      peak: 6,
+      attraction: 7
+    };
+
+    const locationInput = document.getElementById('campsiteLocation');
+    const locationList = document.getElementById('locationSuggestions');
+    const locationStatus = document.getElementById('locationStatus');
+    let locationSuggestions = [];
+    let locationActiveIndex = -1;
+    let locationSearchTimer = null;
+    let locationFetchId = 0;
+    let locationSkipSearch = false;
+
+    function placeIcon(props) {
+      if (props.osm_key === 'tourism' && (props.osm_value === 'camp_site' || props.osm_value === 'caravan_site')) return '⛺';
+      if (props.osm_key === 'leisure' && props.osm_value === 'park') return '🌲';
+      if (props.osm_key === 'boundary' && props.osm_value === 'national_park') return '🏞️';
+      if (props.osm_key === 'place') return '📍';
+      return '🗺️';
+    }
+
+    function placeBadge(props) {
+      if (props.osm_key === 'tourism' && props.osm_value === 'camp_site') return 'Campground';
+      if (props.osm_key === 'tourism' && props.osm_value === 'caravan_site') return 'RV site';
+      if (props.osm_key === 'boundary' && props.osm_value === 'national_park') return 'National park';
+      if (props.osm_key === 'leisure' && props.osm_value === 'park') return 'Park';
+      return '';
+    }
+
+    function placeSubtitle(props) {
+      const parts = [props.street, props.city, props.county, props.state, props.country]
+        .filter((v, i, arr) => v && arr.indexOf(v) === i);
+      return parts.join(', ');
+    }
+
+    function formatPlaceLabel(props) {
+      const title = props.name || props.street || props.city || 'Selected location';
+      const sub = placeSubtitle(props);
+      if (sub && sub !== title) return title + ' — ' + sub;
+      return title;
+    }
+
+    function mapsUrlForCoords(lon, lat, label) {
+      const query = encodeURIComponent(label || lat + ',' + lon);
+      return 'https://www.google.com/maps/search/?api=1&query=' + query;
+    }
+
+    function rankPlace(props) {
+      if (props.osm_key === 'tourism') return PLACE_PRIORITY[props.osm_value] ?? 99;
+      if (props.osm_key === 'boundary' && props.osm_value === 'national_park') return PLACE_PRIORITY.national_park;
+      if (props.osm_key === 'leisure' && props.osm_value === 'park') return PLACE_PRIORITY.park;
+      return 99;
+    }
+
+    function closeLocationSuggestions() {
+      locationList.classList.remove('open');
+      locationInput.setAttribute('aria-expanded', 'false');
+      locationActiveIndex = -1;
+      locationList.querySelectorAll('.suggestion-item').forEach(el => el.classList.remove('active'));
+    }
+
+    function renderLocationSuggestions(items) {
+      locationSuggestions = items;
+      locationActiveIndex = -1;
+      locationList.innerHTML = '';
+
+      if (!items.length) {
+        closeLocationSuggestions();
+        return;
+      }
+
+      for (let i = 0; i < items.length; i++) {
+        const { properties: props, geometry } = items[i];
+        const title = props.name || props.street || props.city || 'Unknown place';
+        const sub = placeSubtitle(props);
+        const badge = placeBadge(props);
+
+        const li = document.createElement('li');
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'suggestion-item';
+        btn.setAttribute('role', 'option');
+        btn.dataset.index = String(i);
+        btn.innerHTML =
+          '<span class="suggestion-icon">' + placeIcon(props) + '</span>' +
+          '<span class="suggestion-text">' +
+            '<div class="suggestion-title">' + escapeHtml(title) + '</div>' +
+            (sub ? '<div class="suggestion-sub">' + escapeHtml(sub) + '</div>' : '') +
+          '</span>' +
+          (badge ? '<span class="suggestion-badge">' + escapeHtml(badge) + '</span>' : '');
+
+        btn.addEventListener('mousedown', e => e.preventDefault());
+        btn.addEventListener('click', () => selectLocationSuggestion(i));
+        li.appendChild(btn);
+        locationList.appendChild(li);
+      }
+
+      locationList.classList.add('open');
+      locationInput.setAttribute('aria-expanded', 'true');
+    }
+
+    function selectLocationSuggestion(index) {
+      const item = locationSuggestions[index];
+      if (!item) return;
+
+      const props = item.properties;
+      const [lon, lat] = item.geometry.coordinates;
+      const label = formatPlaceLabel(props);
+
+      locationSkipSearch = true;
+      locationInput.value = label;
+      if (!document.getElementById('campsiteName').value.trim() && props.name) {
+        document.getElementById('campsiteName').value = props.name;
+      }
+      document.getElementById('mapsLink').value = mapsUrlForCoords(lon, lat, label);
+      closeLocationSuggestions();
+      locationStatus.textContent = '';
+      persistAndRender();
+      showToast('Location set');
+    }
+
+    function setLocationActive(index) {
+      const buttons = locationList.querySelectorAll('.suggestion-item');
+      buttons.forEach(el => el.classList.remove('active'));
+      locationActiveIndex = index;
+      if (index >= 0 && buttons[index]) {
+        buttons[index].classList.add('active');
+        buttons[index].scrollIntoView({ block: 'nearest' });
+      }
+    }
+
+    async function searchLocations(query) {
+      const trimmed = query.trim();
+      if (trimmed.length < 2) {
+        locationStatus.textContent = '';
+        closeLocationSuggestions();
+        return;
+      }
+
+      const fetchId = ++locationFetchId;
+      locationStatus.textContent = 'Searching…';
+
+      try {
+        const url = 'https://photon.komoot.io/api/?q=' + encodeURIComponent(trimmed) +
+          '&limit=8&lang=en';
+        const res = await fetch(url);
+        if (!res.ok) throw new Error('search failed');
+        const data = await res.json();
+        if (fetchId !== locationFetchId) return;
+
+        const features = (data.features || []).slice().sort((a, b) => rankPlace(a.properties) - rankPlace(b.properties));
+        renderLocationSuggestions(features);
+        locationStatus.textContent = features.length
+          ? features.length + ' suggestion' + (features.length === 1 ? '' : 's')
+          : 'No matches — keep typing or enter manually';
+      } catch (_) {
+        if (fetchId !== locationFetchId) return;
+        closeLocationSuggestions();
+        locationStatus.textContent = 'Suggestions unavailable — enter location manually';
+      }
+    }
+
+    function scheduleLocationSearch() {
+      if (locationSkipSearch) {
+        locationSkipSearch = false;
+        return;
+      }
+      clearTimeout(locationSearchTimer);
+      locationSearchTimer = setTimeout(() => searchLocations(locationInput.value), 280);
+    }
+
+    locationInput.addEventListener('input', scheduleLocationSearch);
+    locationInput.addEventListener('focus', () => {
+      if (locationSuggestions.length) {
+        locationList.classList.add('open');
+        locationInput.setAttribute('aria-expanded', 'true');
+      }
+    });
+    locationInput.addEventListener('blur', () => {
+      setTimeout(closeLocationSuggestions, 180);
+    });
+    locationInput.addEventListener('keydown', e => {
+      if (!locationList.classList.contains('open') || !locationSuggestions.length) return;
+
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setLocationActive(Math.min(locationActiveIndex + 1, locationSuggestions.length - 1));
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setLocationActive(Math.max(locationActiveIndex - 1, 0));
+      } else if (e.key === 'Enter' && locationActiveIndex >= 0) {
+        e.preventDefault();
+        selectLocationSuggestion(locationActiveIndex);
+      } else if (e.key === 'Escape') {
+        closeLocationSuggestions();
+        locationStatus.textContent = '';
+      }
+    });
 
     document.querySelectorAll('input, textarea, select').forEach(el => {
       el.addEventListener('input', persistAndRender);

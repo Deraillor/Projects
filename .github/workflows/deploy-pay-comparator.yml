@@ -1,12 +1,12 @@
-name: Deploy Airline Pay Comparator
+name: Deploy Site to GitHub Pages
 
 on:
   push:
     branches:
       - master
-      - cursor/airline-pay-comparator-eb9e
     paths:
       - 'airline-pay-comparator/**'
+      - 'camping-planner.html'
       - '.github/workflows/deploy-pay-comparator.yml'
   workflow_dispatch:
 
@@ -29,10 +29,16 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Build site artifact
+        run: |
+          mkdir -p _site
+          cp -r airline-pay-comparator/* _site/
+          cp camping-planner.html _site/
+
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: airline-pay-comparator
+          path: _site
 
       - name: Deploy to GitHub Pages
         id: deployment
