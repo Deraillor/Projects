@@ -1019,6 +1019,114 @@
       return 99;
     }
 
+    function normalizeForMatch(text) {
+      return String(text || '')
+        .toLowerCase()
+        .replace(/[/\-&_,.]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+    }
+
+    function meaningfulTokens(text) {
+      const stop = new Set(['the', 'and', 'at', 'in', 'of', 'near', 'ny', 'new', 'york']);
+      return normalizeForMatch(text)
+        .split(' ')
+        .filter(t => t.length > 1 && !stop.has(t));
+    }
+
+    function looksLikeCampSearch(query) {
+      return /camp|lake|rv|trail|park|site|ground|forest|wild/i.test(query);
+    }
+
+    function buildSearchQueries(query) {
+      const trimmed = query.trim();
+      const variants = new Set([trimmed]);
+
+      const slashAsDash = trimmed.replace(/\s*\/\s*/g, '-');
+      const slashAsSpace = trimmed.replace(/\s*\/\s*/g, ' ');
+      const hyphenAsSpace = trimmed.replace(/-/g, ' ');
+      [slashAsDash, slashAsSpace, hyphenAsSpace].forEach(v => {
+        if (v && v !== trimmed) variants.add(v);
+      });
+
+      const campSuffix = /camp\s*ground|camp\s*site|campsite/i;
+      if (!campSuffix.test(trimmed) && (looksLikeCampSearch(trimmed) || trimmed.length >= 8)) {
+        for (const base of [...variants]) {
+          variants.add(base + ' campground');
+        }
+      }
+
+      return [...variants].filter(Boolean);
+    }
+
+    function placeKey(feature) {
+      const props = feature.properties;
+      return (props.osm_type || '') + ':' + (props.osm_id || '') + ':' + (props.name || '');
+    }
+
+    function scorePlaceMatch(feature, query) {
+      const props = feature.properties;
+      const tokens = meaningfulTokens(query);
+      if (!tokens.length) return 0;
+
+      const name = normalizeForMatch(props.name);
+      const full = normalizeForMatch([
+        props.name, props.street, props.city, props.county, props.state, props.country
+      ].filter(Boolean).join(' '));
+
+      let score = 100 - rankPlace(props);
+
+      for (const token of tokens) {
+        if (name.includes(token)) score += 18;
+        else if (full.includes(token)) score += 8;
+        else score -= 12;
+      }
+
+      const queryCore = normalizeForMatch(query).replace(/camp\s*ground|camp\s*site|campsite/g, '').trim();
+      const nameCore = name.replace(/camp\s*ground|camp\s*site|campsite/g, '').trim();
+      if (queryCore && nameCore && (nameCore.includes(queryCore) || queryCore.includes(nameCore))) {
+        score += 45;
+      }
+
+      const queryCompact = normalizeForMatch(query).replace(/\s+/g, '');
+      const nameCompact = name.replace(/\s+/g, '');
+      if (queryCompact.length >= 4 && nameCompact.includes(queryCompact)) score += 35;
+
+      if (props.osm_key === 'tourism' && props.osm_value === 'camp_site') score += 12;
+      if (/north.*south|south.*north/.test(name) && /north.*south|south.*north/.test(normalizeForMatch(query))) {
+        score += 25;
+      }
+
+      return score;
+    }
+
+    async function fetchPhotonPlaces(query, limit) {
+      const url = 'https://photon.komoot.io/api/?q=' + encodeURIComponent(query) +
+        '&limit=' + limit + '&lang=en';
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('search failed');
+      const data = await res.json();
+      return data.features || [];
+    }
+
+    function mergeAndRankPlaces(featureLists, query) {
+      const merged = new Map();
+      for (const features of featureLists) {
+        for (const feature of features) {
+          const key = placeKey(feature);
+          const score = scorePlaceMatch(feature, query);
+          const existing = merged.get(key);
+          if (!existing || score > existing.score) merged.set(key, { feature, score });
+        }
+      }
+
+      return [...merged.values()]
+        .filter(entry => entry.score > 0)
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 8)
+        .map(entry => entry.feature);
+    }
+
     function closeLocationSuggestions() {
       locationList.classList.remove('open');
       locationInput.setAttribute('aria-expanded', 'false');
@@ -1108,14 +1216,13 @@
       locationStatus.textContent = 'Searching…';
 
       try {
-        const url = 'https://photon.komoot.io/api/?q=' + encodeURIComponent(trimmed) +
-          '&limit=8&lang=en';
-        const res = await fetch(url);
-        if (!res.ok) throw new Error('search failed');
-        const data = await res.json();
+        const queries = buildSearchQueries(trimmed);
+        const results = await Promise.all(
+          queries.slice(0, 4).map(q => fetchPhotonPlaces(q, 6))
+        );
         if (fetchId !== locationFetchId) return;
 
-        const features = (data.features || []).slice().sort((a, b) => rankPlace(a.properties) - rankPlace(b.properties));
+        const features = mergeAndRankPlaces(results, trimmed);
         renderLocationSuggestions(features);
         locationStatus.textContent = features.length
           ? features.length + ' suggestion' + (features.length === 1 ? '' : 's')
