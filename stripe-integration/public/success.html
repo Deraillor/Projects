@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Payment successful</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <h1>Payment successful</h1>
+      <p class="lede">Confirm fulfillment from your <code>checkout.session.completed</code> webhook, not this page alone.</p>
+      <p id="session" class="hint"></p>
+      <p><a href="/">Back</a></p>
+    </main>
+    <script>
+      const params = new URLSearchParams(window.location.search);
+      const sessionId = params.get('session_id');
+      if (sessionId) {
+        document.getElementById('session').textContent = `Checkout Session: ${sessionId}`;
+      }
+    </script>
+  </body>
+</html>

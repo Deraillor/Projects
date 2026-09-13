@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Stripe starter</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <p class="eyebrow">Payments · Connect · Treasury</p>
+      <h1>Stripe starter</h1>
+      <p class="lede">
+        Create a connected account, then open Checkout. Destination charges keep the
+        platform as merchant of record.
+      </p>
+
+      <section>
+        <h2>1. Connect account</h2>
+        <form id="account-form">
+          <label>
+            Display name
+            <input name="displayName" value="Demo seller" required />
+          </label>
+          <label>
+            Email
+            <input name="email" type="email" placeholder="seller@example.com" />
+          </label>
+          <button type="submit">Create connected account</button>
+        </form>
+        <pre id="account-out" class="out" hidden></pre>
+      </section>
+
+      <section>
+        <h2>2. Checkout</h2>
+        <form id="checkout-form">
+          <label>
+            Product name
+            <input name="productName" value="Platform demo item" required />
+          </label>
+          <label>
+            Amount (cents)
+            <input name="amount" type="number" min="50" value="2000" required />
+          </label>
+          <label>
+            Connected account ID (optional)
+            <input name="connectedAccountId" id="connected-account-id" placeholder="acct_..." />
+          </label>
+          <button type="submit">Open Checkout</button>
+        </form>
+        <pre id="checkout-out" class="out" hidden></pre>
+      </section>
+
+      <section>
+        <h2>3. Treasury financial account</h2>
+        <p class="hint">Requires Treasury for platforms enablement on your Stripe account.</p>
+        <form id="treasury-form">
+          <label>
+            Connected account ID
+            <input name="connectedAccountId" id="treasury-account-id" placeholder="acct_..." required />
+          </label>
+          <button type="submit">Create financial account</button>
+        </form>
+        <pre id="treasury-out" class="out" hidden></pre>
+      </section>
+    </main>
+    <script src="/app.js"></script>
+  </body>
+</html>
