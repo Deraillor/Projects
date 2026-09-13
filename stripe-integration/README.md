@@ -1,5 +1,7 @@
 # Stripe starter (Payments + Connect + Treasury)
 
+**Status: archived / paused** — no near-term need to take customer payments. Code and plan are kept for later.
+
 Minimal Express app implementing the [integration plan](./INTEGRATION_PLAN.md).
 
 ## Prerequisites

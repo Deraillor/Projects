@@ -1,5 +1,7 @@
 # Stripe integration plan
 
+**Status: archived / paused** — payments work deferred until needed.
+
 **Products:** Payments · Connect · Treasury  
 **Generated:** 2026-09-13 (fallback plan — `stripe_implementation_planner` requires Stripe MCP auth in Cursor Desktop)  
 **API version:** latest (`2026-07-29.dahlia` or newer SDK default)  
